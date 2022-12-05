@@ -1,0 +1,8 @@
+prefix=/home/grey/vio/install
+
+Name: vio_stereo
+Description: Description of vio_stereo
+Version: 0.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lvio_stereo
+Requires: 

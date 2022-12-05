@@ -1,0 +1,8 @@
+prefix=/home/grey/vio/install
+
+Name: loop_fusion
+Description: Description of loop_fusion
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

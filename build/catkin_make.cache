@@ -1,0 +1,2 @@
+vio_stereo/camera_models:vio_stereo/global_fusion:vio_stereo/vio_stereo
+-DCATKIN_DEVEL_PREFIX=/home/grey/vio/devel -DCMAKE_INSTALL_PREFIX=/home/grey/vio/install -G Unix Makefiles
