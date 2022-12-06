@@ -1,8 +1,0 @@
-prefix=/home/grey/vio/devel
-
-Name: global_fusion
-Description: Description of global_fusion
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
