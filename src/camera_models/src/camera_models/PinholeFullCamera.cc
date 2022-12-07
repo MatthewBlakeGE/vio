@@ -619,7 +619,6 @@ PinholeFullCamera::liftProjective( const Eigen::Vector2d& p, Eigen::Vector3d& P,
  * \param P 3D point coordinates
  * \param p return value, contains the image point coordinates
  */
-// 将空间点返回像素坐标
 void
 PinholeFullCamera::spaceToPlane( const Eigen::Vector3d& P, Eigen::Vector2d& p ) const
 {

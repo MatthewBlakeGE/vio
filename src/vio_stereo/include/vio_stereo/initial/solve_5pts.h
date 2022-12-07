@@ -10,7 +10,6 @@ using namespace std;
 using namespace Eigen;
 
 #include <ros/console.h>
-
 class MotionEstimator {
  public:
   bool solveRelativeRT(const vector<pair<Vector3d, Vector3d>>& corres,

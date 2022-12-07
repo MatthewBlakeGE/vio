@@ -1,9 +1,8 @@
 #include "factor/projection_2frame_2cam_factor.h"
 
-Eigen::Matrix2d ProjectionTwoFrameTwoCamFactor::sqrt_info;  // 信息矩阵
+Eigen::Matrix2d ProjectionTwoFrameTwoCamFactor::sqrt_info;
 double ProjectionTwoFrameTwoCamFactor::sum_t;
 
-// 两帧图像通过两个相机的重投影
 ProjectionTwoFrameTwoCamFactor::ProjectionTwoFrameTwoCamFactor(
     const Eigen::Vector3d& _pts_i, const Eigen::Vector3d& _pts_j,
     const Eigen::Vector2d& _velocity_i, const Eigen::Vector2d& _velocity_j,
@@ -29,11 +28,10 @@ ProjectionTwoFrameTwoCamFactor::ProjectionTwoFrameTwoCamFactor(
 #endif
 };
 
-// Evaluate 计算所有状态变量构成的残差和雅克比矩阵
 bool ProjectionTwoFrameTwoCamFactor::Evaluate(double const* const* parameters,
                                               double* residuals,
                                               double** jacobians) const {
-  TimeCost time_cost;
+  TimeCost tic_toc;
   Eigen::Vector3d Pi(parameters[0][0], parameters[0][1], parameters[0][2]);
   Eigen::Quaterniond Qi(parameters[0][6], parameters[0][3], parameters[0][4],
                         parameters[0][5]);
@@ -160,7 +158,7 @@ bool ProjectionTwoFrameTwoCamFactor::Evaluate(double const* const* parameters,
                     sqrt_info * velocity_j.head(2);
     }
   }
-  sum_t += time_cost.time_end();
+  sum_t += tic_toc.time_end();
 
   return true;
 }

@@ -12,7 +12,6 @@
 #include <opencv2/opencv.hpp>
 using namespace Eigen;
 using namespace std;
-
 struct SFMFeature {
   bool state;
   int id;
@@ -20,7 +19,6 @@ struct SFMFeature {
   double position[3];
   double depth;
 };
-
 struct ReprojectionError3D {
   ReprojectionError3D(double observed_u, double observed_v)
       : observed_u(observed_u), observed_v(observed_v) {}

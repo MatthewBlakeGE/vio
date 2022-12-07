@@ -50,7 +50,8 @@ class Preintegration {
   Eigen::Matrix<double, 15, 15> jacobian, covariance;
   Eigen::Matrix<double, 15, 15> step_jacobian;
   Eigen::Matrix<double, 15, 18> step_V;
-  Eigen::DiagonalMatrix<double, 18, 18> noise;
+  //   Eigen::DiagonalMatrix<double, 18, 18> noise;
+  Eigen::Matrix<double, 18, 18> noise;
 
   double sum_dt;
   Eigen::Vector3d delta_p;

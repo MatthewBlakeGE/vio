@@ -419,8 +419,7 @@ EquidistantCamera::liftSphere(const Eigen::Vector2d& p, Eigen::Vector3d& P) cons
 }
 
 /** 
- * \brief 将图像特征点的坐标映射到空间坐标，里面涉及处理畸变的过程。最后得到俩组特征点的位置
- * Lifts a point from the image plane to its projective ray
+ * \brief Lifts a point from the image plane to its projective ray
  *
  * \param p image coordinates
  * \param P coordinates of the projective ray

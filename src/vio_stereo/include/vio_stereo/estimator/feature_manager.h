@@ -16,8 +16,6 @@ using namespace Eigen;
 #include "common/common.h"
 #include "common/parameters.h"
 
-// 特征点在每一帧上的属性
-// 它指的是空间特征点P1映射到frame1或frame2上对应的图像坐标、特征点的跟踪速度、空间坐标等属性都封装到类FeaturePerFrame中
 class FeaturePerFrame {
  public:
   FeaturePerFrame(const Eigen::Matrix<double, 7, 1>& _point, double td) {
@@ -31,8 +29,6 @@ class FeaturePerFrame {
     cur_td = td;
     is_stereo = false;
   }
-
-  // FIXME:
   void rightObservation(const Eigen::Matrix<double, 7, 1>& _point) {
     pointRight.x() = _point(0);
     pointRight.y() = _point(1);
@@ -50,24 +46,15 @@ class FeaturePerFrame {
   bool is_stereo;
 };
 
-// 管理一个特征点
-// 就特征点P1来说，它被两个帧观测到，第一次观测到P1的帧为frame1,即start_frame=1，
-// 最后一次观测到P1的帧为frame2,即endframe()=2,并把start_frame~endframe() 对应帧的属性存储起来，
 class FeaturePerId {
  public:
-  const int feature_id;  //特征点id
-  int start_frame;       //第一次出现该特征点的帧号
-
-  /*class FeaturePerFrame
-    它指的是空间特征点P1映射到frame1或frame2上对应的图像坐标、特征点的跟踪速度、空间坐标等属性都封装到类FeaturePerFrame中*/
-  //这个特征点在所有观测到他的图像上的性质
+  const int feature_id;
+  int start_frame;
   vector<FeaturePerFrame> feature_per_frame;
+  int used_num;
+  double estimated_depth;
+  int solve_flag;  // 0 haven't solve yet; 1 solve succ; 2 solve fail;
 
-  int used_num;            //出现的次数
-  double estimated_depth;  //逆深度
-  int solve_flag;  // 该特征点的状态，是否被三角 0 haven't solve yet; 1 solve succ; 2 solve fail;
-
-  // 构造函数
   FeaturePerId(int _feature_id, int _start_frame)
       : feature_id(_feature_id),
         start_frame(_start_frame),
@@ -78,7 +65,6 @@ class FeaturePerId {
   int endFrame();
 };
 
-// 特征点的管理类
 class FeatureManager {
  public:
   FeatureManager(Matrix3d _Rs[]);
@@ -112,12 +98,7 @@ class FeatureManager {
   void removeBack();
   void removeFront(int frame_count);
   void removeOutlier(set<int>& outlierIndex);
-
-  /*class FeaturePerId
-    管理一个特征点
-    就特征点P1来说，它被两个帧观测到，第一次观测到P1的帧为frame1,即start_frame=1，
-    最后一次观测到P1的帧为frame2,即endframe()=2,并把start_frame~endframe() 对应帧的属性存储起来，    */
-  list<FeaturePerId> feature;  // 里边放的是特征点,
+  list<FeaturePerId> feature;
   int last_track_num;
   double last_average_parallax;
   int new_feature_num;

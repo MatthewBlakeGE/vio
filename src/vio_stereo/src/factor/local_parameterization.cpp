@@ -1,6 +1,5 @@
 #include "factor/local_parameterization.h"
 
-// 定义了四元数的加法
 bool LocalParameterization::Plus(const double* x, const double* delta,
                                  double* x_plus_delta) const {
   Eigen::Map<const Eigen::Vector3d> _p(x);
@@ -20,13 +19,11 @@ bool LocalParameterization::Plus(const double* x, const double* delta,
   return true;
 }
 
-//FIXME: 计算新的jocabian矩阵
 bool LocalParameterization::ComputeJacobian(const double* x,
                                             double* jacobian) const {
   Eigen::Map<Eigen::Matrix<double, 7, 6, Eigen::RowMajor>> j(jacobian);
-  // Eigen::RowMajor指的是行优先
   j.topRows<6>().setIdentity();
-  j.bottomRows<1>().setZero();  //初始化j
+  j.bottomRows<1>().setZero();
 
   return true;
 }

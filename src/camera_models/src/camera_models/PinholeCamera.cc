@@ -445,7 +445,6 @@ PinholeCamera::liftSphere(const Eigen::Vector2d& p, Eigen::Vector3d& P) const
  *
  * \param p image coordinates
  * \param P coordinates of the projective ray
- * 这个函数是对鱼眼相机模型的标定及去畸变过程
  */
 void
 PinholeCamera::liftProjective(const Eigen::Vector2d& p, Eigen::Vector3d& P) const

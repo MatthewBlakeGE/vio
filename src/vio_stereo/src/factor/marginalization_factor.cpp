@@ -81,63 +81,42 @@ MarginalizationInfo::~MarginalizationInfo() {
   }
 }
 
-// 将定义的 residual_block_info 添加到 marginalization_info
-// 这里其实就是分别将不同损失函数对应的优化变量、边缘化位置存入到 parameter_block_sizes 和 parameter_block_idx 中，
-// 这里注意的是执行到这一步， parameter_block_idx 中仅仅有待边缘化的优化变量的内存地址的key，而且其对应value全部为0
 void MarginalizationInfo::addResidualBlockInfo(
     ResidualBlockInfo* residual_block_info) {
   factors.emplace_back(residual_block_info);
 
   std::vector<double*>& parameter_blocks =
-      residual_block_info
-          ->parameter_blocks;  //parameter_blocks里面放的是marg相关的变量
+      residual_block_info->parameter_blocks;
   std::vector<int> parameter_block_sizes =
       residual_block_info->cost_function->parameter_block_sizes();
 
   for (int i = 0;
        i < static_cast<int>(residual_block_info->parameter_blocks.size());
-       i++)  //这里应该是优化的变量
-  {
-    double* addr = parameter_blocks[i];  //指向数据的指针
-    int size = parameter_block_sizes
-        [i];  //因为仅仅有地址不行，还需要有地址指向的这个数据的长度
-    parameter_block_size[reinterpret_cast<long>(addr)] =
-        size;  //将指针强转为数据的地址
+       i++) {
+    double* addr = parameter_blocks[i];
+    int size = parameter_block_sizes[i];
+    parameter_block_size[reinterpret_cast<long>(addr)] = size;
   }
 
   for (int i = 0; i < static_cast<int>(residual_block_info->drop_set.size());
-       i++)  //这里应该是待边缘化的变量
-  {
-    double* addr =
-        parameter_blocks[residual_block_info
-                             ->drop_set[i]];  //这个是待边缘化的变量的id
-    parameter_block_idx[reinterpret_cast<long>(addr)] =
-        0;  //将需要marg的变量的id存入parameter_block_idx
+       i++) {
+    double* addr = parameter_blocks[residual_block_info->drop_set[i]];
+    parameter_block_idx[reinterpret_cast<long>(addr)] = 0;
   }
 }
 
-// 之前通过调用 addResidualBlockInfo() 已经确定marg变量的数量、存储位置、长度以及待优化变量的数量以及存储位置，下面就需要调用 preMarginalize() 进行预处理
 void MarginalizationInfo::preMarginalize() {
-  for (
-      auto it :
-      factors)  //在前面的 addResidualBlockInfo 中会将不同的残差块加入到factor中
-  {
-    it->Evaluate();  //利用c++的多态性分别计算所有状态变量构成的残差和雅克比矩阵,其实就是调用各个损失函数中的重载函数Evaluate()
+  for (auto it : factors) {
+    it->Evaluate();
 
     std::vector<int> block_sizes = it->cost_function->parameter_block_sizes();
     for (int i = 0; i < static_cast<int>(block_sizes.size()); i++) {
-      long addr =
-          reinterpret_cast<long>(it->parameter_blocks[i]);  //优化变量的地址
+      long addr = reinterpret_cast<long>(it->parameter_blocks[i]);
       int size = block_sizes[i];
-      if (parameter_block_data.find(addr) ==
-          parameter_block_data
-              .end())  //parameter_block_data是整个优化变量的数据
-      {
+      if (parameter_block_data.find(addr) == parameter_block_data.end()) {
         double* data = new double[size];
-        memcpy(data, it->parameter_blocks[i],
-               sizeof(double) * size);  //重新开辟一块内存
-        parameter_block_data[addr] =
-            data;  //通过之前的优化变量的数据的地址和新开辟的内存数据进行关联
+        memcpy(data, it->parameter_blocks[i], sizeof(double) * size);
+        parameter_block_data[addr] = data;
       }
     }
   }
@@ -186,30 +165,23 @@ void* ThreadsConstructA(void* threadsstruct) {
   return threadsstruct;
 }
 
-// 正式开始进行边缘化操作
 void MarginalizationInfo::marginalize() {
-  /* -------------------会先补充parameter_block_idx，前面提到经过addResidualBlockInfo()函数仅仅带边缘化的优化变量在parameter_block_idx有key值，
-    这里会将保留的优化变量的内存地址作为key值补充进去，并统一他们的value值是其前面已经放入parameter_block_idx的优化变量的维度之和，同时这里会计算出两个变量m和n，
-    他们分别是待边缘化的优化变量的维度和以及保留的优化变量的维度和。*/
-  int pos = 0;                          //pos为所有变量维度
-  for (auto& it : parameter_block_idx)  //遍历待marg的优化变量的内存地址
-  {
+  int pos = 0;
+  for (auto& it : parameter_block_idx) {
     it.second = pos;
     pos += localSize(parameter_block_size[it.first]);
   }
 
-  m = pos;  //需要marg掉的变量个数
+  m = pos;
 
   for (const auto& it : parameter_block_size) {
-    if (parameter_block_idx.find(it.first) ==
-        parameter_block_idx.end())  //如果这个变量不是是待marg的优化变量
-    {
-      parameter_block_idx[it.first] = pos;  //就将这个待marg的变量id设为pos
-      pos += localSize(it.second);          //pos加上这个变量的长度
+    if (parameter_block_idx.find(it.first) == parameter_block_idx.end()) {
+      parameter_block_idx[it.first] = pos;
+      pos += localSize(it.second);
     }
   }
 
-  n = pos - m;  //要保留下来的变量个数
+  n = pos - m;
   //ROS_INFO("marginalization, pos: %d, m: %d, n: %d, size: %d", pos, m, n, (int)parameter_block_idx.size());
   if (m == 0) {
     valid = false;
@@ -217,10 +189,8 @@ void MarginalizationInfo::marginalize() {
     return;
   }
 
-  //通过上面的操作就会将所有的优化变量进行一个伪排序，待marg的优化变量的idx为0，其他的和起所在的位置相关
   TimeCost t_summing;
   Eigen::MatrixXd A(pos, pos);
-  ;  //整个矩阵A的大小
   Eigen::VectorXd b(pos);
   A.setZero();
   b.setZero();
@@ -252,14 +222,11 @@ void MarginalizationInfo::marginalize() {
     */
   //multi thread
 
-  //---------------函数会通过多线程快速构造各个残差对应的各个优化变量的信息矩阵（雅克比和残差前面都已经求出来了），然后在加起来.
-  //---------------因为这里构造信息矩阵时采用的正是parameter_block_idx作为构造顺序，因此，就会自然而然地将待边缘化的变量构造在矩阵的左上方。
   TimeCost t_thread_summing;
   pthread_t tids[NUM_THREADS];
   ThreadsStruct threadsstruct[NUM_THREADS];
   int i = 0;
-  for (auto it : factors)  //将各个残差块的雅克比矩阵分配到各个线程中去
-  {
+  for (auto it : factors) {
     threadsstruct[i].sub_factors.push_back(it);
     i++;
     i = i % NUM_THREADS;
@@ -271,12 +238,11 @@ void MarginalizationInfo::marginalize() {
     threadsstruct[i].parameter_block_size = parameter_block_size;
     threadsstruct[i].parameter_block_idx = parameter_block_idx;
     int ret = pthread_create(&tids[i], NULL, ThreadsConstructA,
-                             (void*)&(threadsstruct[i]));  //分别构造矩阵
-    if (ret != 0)
-      if (ret != 0) {
-        ROS_WARN("pthread_create error");
-        ROS_BREAK();
-      }
+                             (void*)&(threadsstruct[i]));
+    if (ret != 0) {
+      ROS_WARN("pthread_create error");
+      ROS_BREAK();
+    }
   }
   for (int i = NUM_THREADS - 1; i >= 0; i--) {
     pthread_join(tids[i], NULL);
@@ -301,20 +267,15 @@ void MarginalizationInfo::marginalize() {
       saes.eigenvectors().transpose();
   //printf("error1: %f\n", (Amm * Amm_inv - Eigen::MatrixXd::Identity(m, m)).sum());
 
-  // -----------函数会通过shur补操作进行边缘化，然后再从边缘化后的信息矩阵中恢复出来雅克比矩阵 linearized_jacobians 和残差 linearized_residuals ，
-  //------------这两者会作为先验残差带入到下一轮的先验残差的雅克比和残差的计算当中去。
-  //舒尔补
   Eigen::VectorXd bmm = b.segment(0, m);
   Eigen::MatrixXd Amr = A.block(0, m, m, n);
   Eigen::MatrixXd Arm = A.block(m, 0, n, m);
   Eigen::MatrixXd Arr = A.block(m, m, n, n);
   Eigen::VectorXd brr = b.segment(m, n);
-  A = Arr -
-      Arm * Amm_inv * Amr;  //这里的A和b应该都是marg过的A和b,大小是发生了变化的
+  A = Arr - Arm * Amm_inv * Amr;
   b = brr - Arm * Amm_inv * bmm;
 
-  //下面就是更新先验残差项
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes2(A);  //求特征值
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes2(A);
   Eigen::VectorXd S =
       Eigen::VectorXd((saes2.eigenvalues().array() > eps)
                           .select(saes2.eigenvalues().array(), 0));
@@ -356,7 +317,6 @@ std::vector<double*> MarginalizationInfo::getParameterBlocks(
   return keep_block_addr;
 }
 
-// 先验残差的损失函数
 MarginalizationFactor::MarginalizationFactor(
     MarginalizationInfo* _marginalization_info)
     : marginalization_info(_marginalization_info) {
@@ -369,11 +329,6 @@ MarginalizationFactor::MarginalizationFactor(
   set_num_residuals(marginalization_info->n);
 };
 
-/* Evaluate 计算所有状态变量构成的残差和雅克比矩阵
-这个函数通过传入的优化变量值parameters，以及先验值（对于先验残差就是上一时刻的先验残差last_marginalization_info，
-对于IMU就是预计分值pre_integrations[1]，对于视觉就是空间的的像素坐标pts_i, pts_j）
-可以计算出各项残差值residuals，以及残差对应个优化变量的雅克比矩阵jacobians。
-参考:https://blog.csdn.net/weixin_44580210/article/details/95748091*/
 bool MarginalizationFactor::Evaluate(double const* const* parameters,
                                      double* residuals,
                                      double** jacobians) const {

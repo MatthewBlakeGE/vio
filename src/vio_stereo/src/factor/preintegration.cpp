@@ -20,13 +20,20 @@ Preintegration::Preintegration(const Eigen::Vector3d& _acc_0,
       delta_v{Eigen::Vector3d::Zero()}
 
 {
-  //这个noise是预积分的噪声方差矩阵
-  noise.setZero();
-  noise.diagonal() << (ACC_N * ACC_N), (ACC_N * ACC_N), (ACC_N_Z * ACC_N_Z),
-      (GYR_N * GYR_N), (GYR_N * GYR_N), (GYR_N * GYR_N), (ACC_N * ACC_N),
-      (ACC_N * ACC_N), (ACC_N_Z * ACC_N_Z), (GYR_N * GYR_N), (GYR_N * GYR_N),
-      (GYR_N * GYR_N), (ACC_W * ACC_W), (ACC_W * ACC_W), (ACC_W * ACC_W),
-      (GYR_W * GYR_W), (GYR_W * GYR_W), (GYR_W * GYR_W);
+  //   //这个noise是预积分的噪声方差矩阵
+  //   noise.setZero();
+  //   noise.diagonal() << (ACC_N * ACC_N), (ACC_N * ACC_N), (ACC_N_Z * ACC_N_Z),
+  //       (GYR_N * GYR_N), (GYR_N * GYR_N), (GYR_N * GYR_N), (ACC_N * ACC_N),
+  //       (ACC_N * ACC_N), (ACC_N_Z * ACC_N_Z), (GYR_N * GYR_N), (GYR_N * GYR_N),
+  //       (GYR_N * GYR_N), (ACC_W * ACC_W), (ACC_W * ACC_W), (ACC_W * ACC_W),
+  //       (GYR_W * GYR_W), (GYR_W * GYR_W), (GYR_W * GYR_W);
+  noise = Eigen::Matrix<double, 18, 18>::Zero();
+  noise.block<3, 3>(0, 0) = (ACC_N * ACC_N) * Eigen::Matrix3d::Identity();
+  noise.block<3, 3>(3, 3) = (GYR_N * GYR_N) * Eigen::Matrix3d::Identity();
+  noise.block<3, 3>(6, 6) = (ACC_N * ACC_N) * Eigen::Matrix3d::Identity();
+  noise.block<3, 3>(9, 9) = (GYR_N * GYR_N) * Eigen::Matrix3d::Identity();
+  noise.block<3, 3>(12, 12) = (ACC_W * ACC_W) * Eigen::Matrix3d::Identity();
+  noise.block<3, 3>(15, 15) = (GYR_W * GYR_W) * Eigen::Matrix3d::Identity();
 }
 
 // 分别把dt、acc、gyr放入对应的buf，并进行预积分和传播

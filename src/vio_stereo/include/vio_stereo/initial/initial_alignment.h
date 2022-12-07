@@ -11,8 +11,6 @@
 
 using namespace Eigen;
 using namespace std;
-
-// 图像的类,里边有关键帧,R t 预积分值和是否关键帧
 class ImageFrame {
  public:
   ImageFrame(){};
