@@ -2,7 +2,7 @@
 #define INITIAL_ALIGNMENT_H
 
 #include <ros/ros.h>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <iostream>
 #include <map>
 #include "common/common.h"

@@ -4,7 +4,7 @@
 #include <ceres/ceres.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Header.h>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 #include <mutex>
 #include <opencv2/core/eigen.hpp>
